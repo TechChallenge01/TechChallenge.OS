@@ -1,0 +1,46 @@
+name: Deploy K8s — OS Service
+
+on:
+  workflow_dispatch:
+    inputs:
+      image_tag:
+        description: 'Docker image tag to deploy'
+        required: true
+        default: 'latest'
+
+env:
+  AWS_REGION: us-east-1
+
+jobs:
+  deploy-k8s:
+    name: Deploy to Kubernetes
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-session-token: ${{ secrets.AWS_SESSION_TOKEN }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Update kubeconfig for EKS
+        run: |
+          aws eks update-kubeconfig \
+            --region ${{ env.AWS_REGION }} \
+            --name techchallenge-eks
+
+      - name: Apply K8s manifests
+        run: kubectl apply -f k8s/ -n techchallenge
+
+      - name: Update image tag
+        run: |
+          kubectl set image deployment/os-service \
+            os-service=$(aws sts get-caller-identity --query Account --output text).dkr.ecr.${{ env.AWS_REGION }}.amazonaws.com/techchallenge-os-service:${{ inputs.image_tag }} \
+            -n techchallenge
+
+      - name: Wait for rollout
+        run: kubectl rollout status deployment/os-service -n techchallenge --timeout=300s

@@ -1,0 +1,70 @@
+name: Quality — OS Service
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'src/**'
+      - 'tests/**'
+  pull_request:
+    branches: [main]
+
+jobs:
+  test-and-quality:
+    name: Tests & SonarCloud
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '10.x'
+
+      - name: Install SonarCloud scanner
+        run: dotnet tool install --global dotnet-sonarscanner
+
+      - name: Restore dependencies
+        run: |
+          dotnet restore src/
+          dotnet restore tests/UnitTests/UnitTests.csproj
+
+      - name: Begin SonarCloud scan
+        env:
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+        run: |
+          dotnet sonarscanner begin \
+            /k:"${{ vars.SONAR_PROJECT_KEY }}" \
+            /o:"${{ vars.SONAR_ORGANIZATION }}" \
+            /d:sonar.token="${{ secrets.SONAR_TOKEN }}" \
+            /d:sonar.host.url="https://sonarcloud.io" \
+            /d:sonar.cs.opencover.reportsPaths="**/coverage.opencover.xml" \
+            /d:sonar.exclusions="**/obj/**,**/bin/**" \
+            /d:sonar.coverage.exclusions="**/Program.cs,**/Migrations/**"
+
+      - name: Build
+        run: |
+          dotnet build src/ --no-restore
+          dotnet build tests/UnitTests/UnitTests.csproj --no-restore
+
+      - name: Run tests with coverage
+        run: |
+          dotnet test tests/UnitTests/UnitTests.csproj \
+            --no-build --no-restore \
+            --collect:"XPlat Code Coverage" \
+            --results-directory ./coverage \
+            -- DataCollectionRunSettings.DataCollectors.DataCollector.Configuration.Format=opencover
+
+      - name: End SonarCloud scan
+        env:
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+        run: dotnet sonarscanner end /d:sonar.token="${{ secrets.SONAR_TOKEN }}"
+
+      - name: Upload coverage report
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage-report-os
+          path: coverage/

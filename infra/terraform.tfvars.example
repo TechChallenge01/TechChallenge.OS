@@ -1,0 +1,22 @@
+# Copie para terraform.tfvars e preencha os valores reais.
+# NUNCA commite terraform.tfvars no git — ele está no .gitignore.
+
+aws_region   = "us-east-1"
+environment  = "prod"
+project_name = "techchallenge"
+
+# MongoDB — rodando no EC2 interno (provisionado automaticamente)
+# Use apenas letras, números, hífen e underline na senha.
+mongodb_root_password = "MinhaS3nhaSegura"
+
+# RabbitMQ — rodando no mesmo EC2
+# Use apenas letras, números, hífen e underline na senha.
+rabbitmq_username = "techchallenge"
+rabbitmq_password = "MinhaS3nhaRabbit"
+
+# JWT Key — gere com: openssl rand -base64 32
+jwt_key = "sua-chave-jwt-com-pelo-menos-32-caracteres-aqui"
+
+# Mercado Pago (apenas para o Billing Service)
+mercadopago_access_token   = "APP_USR-xxxxxxxx"
+mercadopago_webhook_secret = "seu-webhook-secret"

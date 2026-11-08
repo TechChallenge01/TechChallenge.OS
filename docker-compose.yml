@@ -1,0 +1,27 @@
+version: "3.9"
+
+# Desenvolvimento local do OS Service
+# Pré-requisito: docker compose -f ../docker-compose.infra.yml up -d
+# Uso: docker compose up -d
+
+services:
+  os-service:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: tc-os-service
+    ports:
+      - "5101:8080"
+    environment:
+      ASPNETCORE_ENVIRONMENT: Development
+      ASPNETCORE_URLS: http://+:8080
+      ConnectionStrings__MongoDB: mongodb://admin:tc-local-pass@host.docker.internal:27017/TechChallengeOS?authSource=admin
+      RabbitMQ__Host: host.docker.internal
+      RabbitMQ__Port: "5672"
+      RabbitMQ__Username: guest
+      RabbitMQ__Password: guest
+      Jwt__Key: tc-local-dev-secret-key-min32chars
+      Jwt__Issuer: TechChallenger
+      Jwt__Audience: TechChallenger
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
