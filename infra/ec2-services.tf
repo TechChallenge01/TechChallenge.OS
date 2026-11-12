@@ -20,7 +20,7 @@ data "aws_ami" "amazon_linux_2023" {
 
 resource "aws_security_group" "services" {
   name        = "${var.project_name}-services-sg"
-  description = "MongoDB e RabbitMQ — acesso restrito aos ECS tasks"
+  description = "MongoDB and RabbitMQ - access restricted to ECS tasks"
   vpc_id      = aws_vpc.main.id
 
   ingress {
