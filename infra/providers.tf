@@ -11,7 +11,7 @@ terraform {
   # Execute infra/bootstrap.sh uma vez antes de rodar terraform init
   # para criar o bucket S3 e a tabela DynamoDB de lock.
   backend "s3" {
-    bucket         = "techchallenge-tfstate" # substitua por techchallenge-tfstate-<seu-account-id>
+    bucket         = "techchallenge-tfstate-891376923749"
     key            = "techchallenge/terraform.tfstate"
     region         = "us-east-1"
     dynamodb_table = "techchallenge-tflock"
