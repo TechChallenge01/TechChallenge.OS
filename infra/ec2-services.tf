@@ -64,20 +64,35 @@ resource "aws_instance" "services" {
   instance_type               = "t3.micro"
   subnet_id                   = aws_subnet.public[0].id
   vpc_security_group_ids      = [aws_security_group.services.id]
+  iam_instance_profile        = "LabInstanceProfile"
   user_data_replace_on_change = true
 
   # SENHAS: use apenas caracteres alfanuméricos + hífen/underline.
   # Caracteres especiais como $, !, & podem quebrar o shell no user_data.
   user_data = <<-EOF
     #!/bin/bash
-    set -e
-    dnf update -y
-    dnf install -y docker
-    systemctl start docker
+    exec > /var/log/user-data.log 2>&1
+    set -ex
+
+    sleep 15
+
+    dnf update -y || true
+    dnf install -y docker ec2-instance-connect
     systemctl enable docker
+    systemctl start docker
+
+    # Aguarda Docker daemon ficar pronto
+    timeout 60 sh -c 'until docker info > /dev/null 2>&1; do sleep 2; done'
+
     mkdir -p /data/mongodb /data/rabbitmq
 
-    # MongoDB 7 — banco de dados de documento
+    docker rm -f mongodb rabbitmq 2>/dev/null || true
+
+    # Pull com retry (3 tentativas)
+    for i in 1 2 3; do docker pull mongo:7.0 && break || sleep 15; done
+    for i in 1 2 3; do docker pull rabbitmq:3.13-management && break || sleep 15; done
+
+    # MongoDB 7
     docker run -d \
       --name mongodb \
       --restart always \
@@ -87,7 +102,37 @@ resource "aws_instance" "services" {
       -e MONGO_INITDB_ROOT_PASSWORD=${var.mongodb_root_password} \
       mongo:7.0
 
-    # RabbitMQ 3.13 — mensageria da Saga
+    # Aguarda MongoDB aceitar conexoes (inicializacao do usuario root leva ~30s)
+    echo "Aguardando MongoDB inicializar..."
+    timeout 180 sh -c 'until docker exec mongodb mongosh --username admin --password ${var.mongodb_root_password} --authenticationDatabase admin --eval "db.adminCommand(\"ping\")" > /dev/null 2>&1; do sleep 5; done'
+    echo "MongoDB pronto"
+
+    # Seed: cliente de teste (upsert - idempotente)
+    docker exec mongodb mongosh \
+      --username admin \
+      --password ${var.mongodb_root_password} \
+      --authenticationDatabase admin \
+      --eval '
+        db = db.getSiblingDB("cadastro");
+        var r = db.clientes.updateOne(
+          { "Cpf": "52998224725" },
+          { $setOnInsert: {
+            "_id": UUID("22222222-0000-0000-0000-000000000001"),
+            "Nome": "Joao Pereira",
+            "Cpf": "52998224725",
+            "Email": "joao.pereira@email.com",
+            "IdUsuarioCriacao": UUID("11111111-0000-0000-0000-000000000003"),
+            "DataCriacao": new Date("2025-01-10T08:00:00Z"),
+            "IdUsuarioAtualizacao": null,
+            "DataAtualizacao": null,
+            "Ativo": true
+          }},
+          { upsert: true }
+        );
+        print("Seed: upserted=" + r.upsertedCount + " matched=" + r.matchedCount);
+      '
+
+    # RabbitMQ 3.13
     docker run -d \
       --name rabbitmq \
       --restart always \
@@ -97,6 +142,9 @@ resource "aws_instance" "services" {
       -e RABBITMQ_DEFAULT_USER=${var.rabbitmq_username} \
       -e RABBITMQ_DEFAULT_PASS=${var.rabbitmq_password} \
       rabbitmq:3.13-management
+
+    docker ps
+    echo "user-data concluido com sucesso"
     EOF
 
   tags = { Name = "${var.project_name}-services" }
