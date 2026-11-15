@@ -272,7 +272,7 @@ dotnet test tests/UnitTests
 dotnet test tests/UnitTests --collect:"XPlat Code Coverage" --results-directory coverage/
 ```
 
-- **Cobertura mínima:** 80% (validada pelo SonarCloud no CI)
+- **Cobertura:** fluxos críticos da Saga (abertura, diagnóstico, aprovação, execução) — relatório no SonarCloud
 - **Relatório:** disponível em cada execução do workflow `quality.yml` como artefato `coverage-report-os`
 - **SonarCloud:** configurado via secrets `SONAR_TOKEN` e variables `SONAR_PROJECT_KEY`, `SONAR_ORGANIZATION`
 
