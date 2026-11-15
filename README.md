@@ -2,6 +2,10 @@
 
 > Fase 4 — FIAP SOAT · Arquitetura de Microsserviços com Saga Pattern
 
+[![Quality Gate Status](https://sonarcloud.io/api/project_badges/measure?project=TechChallenge01_TechChallenge.OS&metric=alert_status)](https://sonarcloud.io/summary/new_code?id=TechChallenge01_TechChallenge.OS)
+[![Coverage](https://sonarcloud.io/api/project_badges/measure?project=TechChallenge01_TechChallenge.OS&metric=coverage)](https://sonarcloud.io/summary/new_code?id=TechChallenge01_TechChallenge.OS)
+[![Bugs](https://sonarcloud.io/api/project_badges/measure?project=TechChallenge01_TechChallenge.OS&metric=bugs)](https://sonarcloud.io/summary/new_code?id=TechChallenge01_TechChallenge.OS)
+
 Microsserviço responsável pelo **ciclo de vida completo das Ordens de Serviço (OS)**, ponto de entrada da Saga coreografada do sistema TechChallenger (oficina mecânica com escala nacional).
 
 ---
