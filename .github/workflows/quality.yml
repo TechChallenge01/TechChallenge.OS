@@ -36,6 +36,7 @@ jobs:
         run: |
           dotnet restore TechChallenge.OS.slnx
           dotnet restore tests/UnitTests/UnitTests.csproj
+          dotnet restore tests/BDD/BDD.csproj
 
       - name: Begin SonarCloud scan
         if: ${{ env.SONAR_TOKEN != '' }}
@@ -53,6 +54,7 @@ jobs:
         run: |
           dotnet build TechChallenge.OS.slnx --no-restore
           dotnet build tests/UnitTests/UnitTests.csproj --no-restore
+          dotnet build tests/BDD/BDD.csproj --no-restore
 
       - name: Run unit tests
         run: |
@@ -61,6 +63,12 @@ jobs:
             --collect:"XPlat Code Coverage" \
             --results-directory ./coverage \
             -- DataCollectionRunSettings.DataCollectors.DataCollector.Configuration.Format=opencover
+
+      - name: Run BDD tests
+        run: |
+          dotnet test tests/BDD/BDD.csproj \
+            --no-build \
+            --logger "trx;LogFileName=bdd-results.trx"
 
       - name: End SonarCloud scan
         if: ${{ env.SONAR_TOKEN != '' }}
